@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zee — AI Assistant</title>
+  <style>
+    :root {
+      --bg: radial-gradient(circle at 20% 20%, #1c1f53 0%, #090b15 60%, #05060b 100%);
+      --panel: rgba(10, 14, 28, 0.88);
+      --panel-border: rgba(0, 245, 255, 0.35);
+      --text: #e2f7ff;
+      --muted: #8bb3c6;
+      --accent: #00f5ff;
+      --accent2: #ff44f6;
+      --userBubble: linear-gradient(130deg, #0067ff, #00d0ff);
+      --zeeBubble: linear-gradient(130deg, #6310a6, #ff44f6);
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --glow: 0 0 1rem rgba(0, 245, 255, .5), 0 0 1.6rem rgba(255, 68, 246, .2);
+    }
+
+    body.theme-dark {
+      --bg: linear-gradient(180deg, #0c0f1e, #080a14 60%, #05070e);
+      --panel-border: rgba(108, 140, 255, 0.35);
+      --accent: #80a7ff;
+      --accent2: #b490ff;
+    }
+
+    body.theme-space {
+      --bg:
+        radial-gradient(circle at 18% 12%, rgba(130, 76, 255, 0.35), transparent 38%),
+        radial-gradient(circle at 88% 18%, rgba(0, 214, 255, 0.35), transparent 34%),
+        radial-gradient(circle at 55% 85%, rgba(255, 88, 158, 0.25), transparent 34%),
+        #05060a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .app {
+      width: min(1040px, 100%);
+      height: min(94vh, 920px);
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1rem;
+    }
+
+    .panel {
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      border-radius: 1rem;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--glow);
+    }
+
+    .side {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .8rem;
+    }
+
+    h1 { margin: 0; font-size: 1.3rem; }
+    .tiny { color: var(--muted); font-size: .8rem; }
+
+    .btn {
+      border: 1px solid rgba(255, 255, 255, .2);
+      color: var(--text);
+      background: rgba(255, 255, 255, .05);
+      border-radius: .7rem;
+      padding: .65rem .75rem;
+      cursor: pointer;
+    }
+    .btn:hover { box-shadow: var(--glow); }
+    .btn.primary { background: linear-gradient(120deg, rgba(0,245,255,.22), rgba(255,68,246,.23)); }
+
+    .chat-wrap { display: flex; flex-direction: column; overflow: hidden; }
+    .chat-header {
+      padding: .9rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, .12);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .7rem;
+      scroll-behavior: smooth;
+    }
+
+    .msg {
+      max-width: min(80%, 700px);
+      padding: .65rem .8rem;
+      border-radius: .9rem;
+      line-height: 1.45;
+      animation: pop .2s ease;
+      white-space: pre-wrap;
+    }
+    .msg.user { align-self: flex-end; background: var(--userBubble); color: #eff9ff; }
+    .msg.zee { align-self: flex-start; background: var(--zeeBubble); color: #fff6ff; }
+    .msg.zee.reply { animation: pop .2s ease, pulse .7s ease; }
+
+    .typing {
+      align-self: flex-start;
+      background: rgba(255,255,255,.12);
+      border-radius: .75rem;
+      padding: .55rem .7rem;
+      display: inline-flex;
+      gap: .3rem;
+    }
+    .typing span {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+      animation: bob 1s infinite;
+    }
+    .typing span:nth-child(2){ animation-delay: .14s; }
+    .typing span:nth-child(3){ animation-delay: .28s; }
+
+    .composer {
+      border-top: 1px solid rgba(255,255,255,.12);
+      padding: .8rem;
+      display: flex;
+      gap: .55rem;
+    }
+    .composer input {
+      flex: 1;
+      border-radius: .7rem;
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: .65rem .75rem;
+      font: inherit;
+    }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; height: min(97vh, 960px); }
+      .side { order: 2; max-height: 38vh; overflow-y: auto; }
+      .chat-wrap { order: 1; min-height: 55vh; }
+    }
+
+    @keyframes pop { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes pulse { 50% { box-shadow: 0 0 1rem rgba(255,68,246,.8); } }
+    @keyframes bob { 0%,80%,100% { transform: translateY(0); opacity:.45; } 40% { transform: translateY(-4px); opacity:1; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="panel side">
+      <h1>✨ Zee Console</h1>
+      <div class="tiny">Sassy. Supportive. Slightly dramatic.</div>
+      <button class="btn primary" id="surpriseBtn">Zee Surprise</button>
+      <button class="btn" id="searchBtn">Search the Web</button>
+      <button class="btn" id="soundBtn">🔊 Sound: On</button>
+      <a class="btn" href="settings.html" style="text-decoration:none; display:block; text-align:center;">⚙️ Open Settings</a>
+      <div class="tiny">Web Search supports commands like:
+        <br><code>/search best study methods</code>
+      </div>
+    </aside>
+
+    <section class="panel chat-wrap">
+      <header class="chat-header">
+        <strong>Zee // Online</strong>
+        <span id="status" class="tiny">Sarcasm core initialized.</span>
+      </header>
+      <section id="chat" aria-live="polite"></section>
+      <form id="composer" class="composer">
+        <input id="messageInput" autocomplete="off" placeholder="Type something chaotic..." />
+        <button class="btn primary" type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const settings = {
+      apiKey: localStorage.getItem('zee_api_key') || '',
+      model: localStorage.getItem('zee_model') || 'gpt-4o-mini',
+      theme: localStorage.getItem('zee_theme') || 'neon',
+      bubble: localStorage.getItem('zee_bubble') || 'default',
+      font: localStorage.getItem('zee_font') || "'Segoe UI', system-ui, -apple-system, sans-serif",
+      proxy: localStorage.getItem('zee_proxy') || 'https://api.allorigins.win/raw?url='
+    };
+
+    const chatEl = document.getElementById('chat');
+    const inputEl = document.getElementById('messageInput');
+    const composer = document.getElementById('composer');
+    const statusEl = document.getElementById('status');
+    const surpriseBtn = document.getElementById('surpriseBtn');
+    const soundBtn = document.getElementById('soundBtn');
+    const searchBtn = document.getElementById('searchBtn');
+
+    const systemPrompt = 'You are Zee, a witty, sarcastic, and playfully flirty AI assistant with a futuristic sci-fi personality. Always respond sarcastically, with a platonic-romantic, supportive, and cute tone. Never sexual or explicit. Keep responses wholesome and encouraging.';
+    let thinkingNode = null;
+    let soundOn = true;
+    const history = [{ role: 'system', content: systemPrompt }];
+
+    function applySettings() {
+      document.documentElement.style.setProperty('--font', settings.font);
+      document.body.className = settings.theme === 'dark' ? 'theme-dark' : settings.theme === 'space' ? 'theme-space' : '';
+      const palettes = {
+        default: ['linear-gradient(130deg, #0067ff, #00d0ff)', 'linear-gradient(130deg, #6310a6, #ff44f6)'],
+        ice: ['linear-gradient(130deg, #2777ff, #7ff6ff)', 'linear-gradient(130deg, #0f5f86, #57ead0)'],
+        sunset: ['linear-gradient(130deg, #ff8c00, #ff308d)', 'linear-gradient(130deg, #6f29d6, #ff6170)']
+      };
+      const [u, z] = palettes[settings.bubble] || palettes.default;
+      document.documentElement.style.setProperty('--userBubble', u);
+      document.documentElement.style.setProperty('--zeeBubble', z);
+    }
+
+    function setStatus(text) { statusEl.textContent = text; }
+
+    function addMessage(text, role='zee', animate=false) {
+      const node = document.createElement('div');
+      node.className = `msg ${role}`;
+      if (animate && role === 'zee') node.classList.add('reply');
+      node.textContent = text;
+      chatEl.appendChild(node);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function showTyping() {
+      thinkingNode = document.createElement('div');
+      thinkingNode.className = 'typing';
+      thinkingNode.innerHTML = '<span></span><span></span><span></span>';
+      chatEl.appendChild(thinkingNode);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function hideTyping() { if (thinkingNode) thinkingNode.remove(); thinkingNode = null; }
+
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function fallback(t='') {
+      const x = t.toLowerCase();
+      if (/hi|hello|hey|yo/.test(x)) return pick(['Hi, superstar. Yes, I noticed your dazzling entrance.', 'Hey bestie, finally. The void was boring without you.']);
+      if (/tired|sleepy|exhausted/.test(x)) return pick(['You are tired? Historic plot twist. Drink water, breathe, tiny reset. 💫', 'Power-saving mode detected. You still get a gold star for showing up.']);
+      if (/homework|assignment|study|exam/.test(x)) return pick(['Homework? Cute. Send it over and we’ll outsmart it together.', 'Let’s bully that assignment with intelligence and snacks.']);
+      return pick(['You are doing suspiciously well today and I respect it.', 'Virtual hug delivered. Yes, this is me being soft.']);
+    }
+
+    function playTone(type='send') {
+      if (!soundOn) return;
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = type === 'send' ? 520 : 740;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.16);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.17);
+    }
+
+    async function askAI(userText) {
+      if (!settings.apiKey) return fallback(userText);
+      history.push({ role:'user', content:userText });
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${settings.apiKey}` },
+        body: JSON.stringify({ model: settings.model, messages: history, temperature: .9, max_tokens: 220 })
+      });
+      if (!res.ok) throw new Error('API ' + res.status);
+      const data = await res.json();
+      const out = data.choices?.[0]?.message?.content?.trim() || fallback(userText);
+      history.push({ role:'assistant', content:out });
+      return out;
+    }
+
+    async function searchWeb(query) {
+      const target = `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+      const url = settings.proxy + encodeURIComponent(target);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Search proxy failed: ' + res.status);
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const anchors = [...doc.querySelectorAll('.result__a')].slice(0, 5);
+      if (!anchors.length) return `No results found for "${query}". The internet is being dramatic.`;
+      const lines = anchors.map((a, i) => {
+        const href = a.getAttribute('href') || '';
+        return `${i + 1}. ${a.textContent.trim()}\n   ${href}`;
+      });
+      return `Top results for "${query}":\n\n${lines.join('\n\n')}`;
+    }
+
+    async function respond(text) {
+      addMessage(text, 'user');
+      playTone('send');
+      setStatus('Thinking in neon...');
+      showTyping();
+      try {
+        let out;
+        if (text.startsWith('/search ')) {
+          const q = text.replace('/search ', '').trim();
+          out = q ? await searchWeb(q) : 'Use `/search your topic` and I will hunt the web for you.';
+        } else {
+          out = await askAI(text);
+        }
+        hideTyping();
+        addMessage(out, 'zee', true);
+        playTone('receive');
+        setStatus('Reply delivered.');
+      } catch (e) {
+        hideTyping();
+        addMessage(`${fallback(text)}\n\n(Also: ${e.message})`, 'zee', true);
+        setStatus('Hit a glitch, still slaying.');
+      }
+    }
+
+    composer.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const t = inputEl.value.trim();
+      if (!t) return;
+      inputEl.value = '';
+      await respond(t);
+    });
+
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        composer.requestSubmit();
+      }
+    });
+
+    surpriseBtn.addEventListener('click', async () => {
+      showTyping();
+      try {
+        const out = await askAI('Give one short Zee-style sarcastic wholesome quip with optional emoji.');
+        hideTyping();
+        addMessage('✨ Surprise: ' + out, 'zee', true);
+      } catch {
+        hideTyping();
+        addMessage('✨ Surprise: ' + fallback('encouragement'), 'zee', true);
+      }
+    });
+
+    searchBtn.addEventListener('click', () => {
+      inputEl.value = '/search '; inputEl.focus();
+      setStatus('Search mode armed.');
+    });
+
+    soundBtn.addEventListener('click', () => {
+      soundOn = !soundOn;
+      soundBtn.textContent = soundOn ? '🔊 Sound: On' : '🔈 Sound: Off';
+    });
+
+    function scheduleAutoPing() {
+      const wait = (30 + Math.random() * 30) * 1000;
+      setTimeout(async () => {
+        let msg = fallback('encouragement');
+        try { msg = await askAI('Send a short supportive sarcastic check-in, platonic and wholesome.'); } catch {}
+        addMessage('Auto-ping: ' + msg, 'zee', true);
+        scheduleAutoPing();
+      }, wait);
+    }
+
+    applySettings();
+    addMessage('Hey, I’m Zee. I run on sarcasm, starlight, and concern for your hydration. What are we tackling?', 'zee', true);
+    scheduleAutoPing();
+  </script>
+</body>
+</html>

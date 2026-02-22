@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zee Settings</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0b0f1f, #060913);
+      color: #e5f8ff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .card {
+      width: min(760px, 100%);
+      background: rgba(10,14,28,.9);
+      border: 1px solid rgba(0,245,255,.35);
+      border-radius: 1rem;
+      padding: 1rem;
+      box-shadow: 0 0 1rem rgba(0,245,255,.35);
+    }
+    h1 { margin-top: 0; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+    .group { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .8rem; }
+    input, select, button {
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: .7rem;
+      background: rgba(255,255,255,.06);
+      color: #e5f8ff;
+      padding: .65rem .75rem;
+      font: inherit;
+    }
+    button { cursor: pointer; }
+    .actions { display:flex; gap:.6rem; flex-wrap: wrap; }
+    .hint { color: #97b5c8; font-size: .85rem; }
+    @media (max-width:700px){ .row{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>⚙️ Zee Settings</h1>
+    <p class="hint">Saved in your browser via <code>localStorage</code>. OpenAI key stays local on this device.</p>
+
+    <div class="group">
+      <label for="apiKey">OpenAI API key</label>
+      <input id="apiKey" type="password" placeholder="sk-..." />
+    </div>
+
+    <div class="row">
+      <div class="group">
+        <label for="model">Model</label>
+        <input id="model" value="gpt-4o-mini" />
+      </div>
+      <div class="group">
+        <label for="proxy">Web Proxy URL (prefix)</label>
+        <input id="proxy" value="https://api.allorigins.win/raw?url=" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="group">
+        <label for="theme">Theme</label>
+        <select id="theme">
+          <option value="neon">Neon</option>
+          <option value="dark">Dark</option>
+          <option value="space">Space</option>
+        </select>
+      </div>
+      <div class="group">
+        <label for="bubble">Bubble Palette</label>
+        <select id="bubble">
+          <option value="default">Cyber Candy</option>
+          <option value="ice">Ice Beam</option>
+          <option value="sunset">Sunset Glitch</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <label for="font">Font</label>
+      <select id="font">
+        <option value="'Segoe UI', system-ui, -apple-system, sans-serif">Neo Sans</option>
+        <option value="'Trebuchet MS', Verdana, sans-serif">Orbit Casual</option>
+        <option value="'Courier New', monospace">Terminal Retro</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button id="saveBtn">Save Settings</button>
+      <button id="resetBtn">Reset Defaults</button>
+      <a href="index.html"><button>Back to Chat</button></a>
+    </div>
+    <p class="hint" id="status"></p>
+  </main>
+
+  <script>
+    const defaults = {
+      apiKey: '',
+      model: 'gpt-4o-mini',
+      theme: 'neon',
+      bubble: 'default',
+      font: "'Segoe UI', system-ui, -apple-system, sans-serif",
+      proxy: 'https://api.allorigins.win/raw?url='
+    };
+
+    const fields = {
+      apiKey: document.getElementById('apiKey'),
+      model: document.getElementById('model'),
+      theme: document.getElementById('theme'),
+      bubble: document.getElementById('bubble'),
+      font: document.getElementById('font'),
+      proxy: document.getElementById('proxy')
+    };
+
+    const status = document.getElementById('status');
+
+    function load() {
+      fields.apiKey.value = localStorage.getItem('zee_api_key') || defaults.apiKey;
+      fields.model.value = localStorage.getItem('zee_model') || defaults.model;
+      fields.theme.value = localStorage.getItem('zee_theme') || defaults.theme;
+      fields.bubble.value = localStorage.getItem('zee_bubble') || defaults.bubble;
+      fields.font.value = localStorage.getItem('zee_font') || defaults.font;
+      fields.proxy.value = localStorage.getItem('zee_proxy') || defaults.proxy;
+    }
+
+    function save() {
+      localStorage.setItem('zee_api_key', fields.apiKey.value.trim());
+      localStorage.setItem('zee_model', fields.model.value.trim() || defaults.model);
+      localStorage.setItem('zee_theme', fields.theme.value);
+      localStorage.setItem('zee_bubble', fields.bubble.value);
+      localStorage.setItem('zee_font', fields.font.value);
+      localStorage.setItem('zee_proxy', fields.proxy.value.trim() || defaults.proxy);
+      status.textContent = 'Saved. Zee has absorbed your preferences.';
+    }
+
+    function reset() {
+      Object.entries(defaults).forEach(([k, v]) => localStorage.setItem('zee_' + k, v));
+      load();
+      status.textContent = 'Defaults restored.';
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', save);
+    document.getElementById('resetBtn').addEventListener('click', reset);
+
+    load();
+  </script>
+</body>
+</html>
